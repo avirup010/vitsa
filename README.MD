@@ -1,6 +1,5 @@
 
   
-  // File: README.md
   # Vitsa - All-in-One AI Chatbot
   
   Vitsa is a dynamic and versatile AI chatbot powered by DeepSeek's API. It features a responsive UI with multiple themes and customization options.
