@@ -1,36 +1,4 @@
 
-{
-    "name": "vitsa-chatbot",
-    "version": "1.0.0",
-    "description": "An all-in-one chatbot using DeepSeek API",
-    "main": "app.js",
-    "scripts": {
-      "start": "node app.js",
-      "dev": "nodemon app.js"
-    },
-    "keywords": [
-      "chatbot",
-      "AI",
-      "DeepSeek",
-      "Vitsa"
-    ],
-    "author": "",
-    "license": "MIT",
-    "dependencies": {
-      "axios": "^1.6.2",
-      "body-parser": "^1.20.2",
-      "cors": "^2.8.5",
-      "dotenv": "^16.3.1",
-      "express": "^4.18.2"
-    },
-    "devDependencies": {
-      "nodemon": "^3.0.1"
-    }
-  }
-  
-  
-  PORT=5500
-  DEEPSEEK_API_KEY=sk-54dce2ff3e1e4d0e84ec4bd20099c360
   
   // File: README.md
   # Vitsa - All-in-One AI Chatbot
