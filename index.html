@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vitsa - Your AI Assistant</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #6366f1;
+      --secondary-color: #4f46e5;
+      --accent-color: #8b5cf6;
+      --dark-color: #1f2937;
+      --light-color: #f3f4f6;
+    }
+    
+    .theme-dark {
+      --primary-color: #8b5cf6;
+      --secondary-color: #7c3aed;
+      --accent-color: #6366f1;
+      --dark-color: #111827;
+      --light-color: #374151;
+      --text-color: #f9fafb;
+      --chat-user-bg: #4b5563;
+      --chat-bot-bg: #6366f1;
+    }
+    
+    .theme-light {
+      --primary-color: #6366f1;
+      --secondary-color: #4f46e5;
+      --accent-color: #8b5cf6;
+      --dark-color: #1f2937;
+      --light-color: #f3f4f6;
+      --text-color: #111827;
+      --chat-user-bg: #e5e7eb;
+      --chat-bot-bg: #c7d2fe;
+    }
+    
+    body {
+      background-color: var(--light-color);
+      color: var(--text-color);
+      transition: all 0.3s ease;
+    }
+    
+    .chat-container {
+      height: calc(100vh - 180px);
+      overflow-y: auto;
+      padding: 1rem;
+      scroll-behavior: smooth;
+    }
+    
+    .message {
+      max-width: 70%;
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 1rem;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    .user-message {
+      background-color: var(--chat-user-bg);
+      margin-left: auto;
+      border-top-right-radius: 0;
+    }
+    
+    .bot-message {
+      background-color: var(--chat-bot-bg);
+      margin-right: auto;
+      border-top-left-radius: 0;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background-color: var(--dark-color);
+      border-radius: 50%;
+      display: inline-block;
+      margin: 0 2px;
+      opacity: 0.6;
+    }
+    
+    .typing-indicator span:nth-child(1) {
+      animation: bounce 1s infinite 0.2s;
+    }
+    
+    .typing-indicator span:nth-child(2) {
+      animation: bounce 1s infinite 0.4s;
+    }
+    
+    .typing-indicator span:nth-child(3) {
+      animation: bounce 1s infinite 0.6s;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    .input-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1rem;
+      background-color: var(--light-color);
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .settings-panel {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 300px;
+      height: 100vh;
+      background-color: var(--dark-color);
+      padding: 1rem;
+      transition: right 0.3s ease-in-out;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    
+    .settings-panel.open {
+      right: 0;
+    }
+    
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      z-index: 50;
+    }
+    
+    .overlay.active {
+      display: block;
+    }
+    
+    .model-option {
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      margin-bottom: 0.5rem;
+      transition: all 0.2s ease;
+    }
+    
+    .model-option:hover {
+      background-color: var(--accent-color);
+    }
+    
+    .model-option.selected {
+      background-color: var(--primary-color);
+    }
+    
+    .error-message {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid #b91c1c;
+    }
+    
+    .status-message {
+      background-color: #dbeafe;
+      color: #1e40af;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid #1e40af;
+      display: none;
+    }
+  </style>
+</head>
+<body class="theme-light">
+
+  <header class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 flex justify-between items-center">
+    <div class="flex items-center space-x-2">
+      <i class="fas fa-robot text-2xl"></i>
+      <h1 class="text-xl font-bold">Vitsa</h1>
+    </div>
+    <div class="flex items-center space-x-4">
+      <button id="theme-toggle" class="p-2 rounded-full hover:bg-purple-600 transition-colors">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button id="settings-toggle" class="p-2 rounded-full hover:bg-purple-600 transition-colors">
+        <i class="fas fa-cog"></i>
+      </button>
+    </div>
+  </header>
+
+  <div id="status-message" class="status-message max-w-4xl mx-auto mt-4">
+    Connecting to Vitsa server...
+  </div>
+
+  <div class="chat-container" id="chat-container">
+    <div class="bot-message message">
+      <p>Hello! I'm Vitsa, your AI assistant. How can I help you today?</p>
+    </div>
+  </div>
+
+  <div class="input-container bg-white dark:bg-gray-800">
+    <div class="max-w-4xl mx-auto">
+      <form id="chat-form" class="flex gap-2">
+        <input 
+          type="text" 
+          id="user-input" 
+          class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all dark:bg-gray-700 dark:text-white"
+          placeholder="Type your message here..."
+          autocomplete="off"
+        >
+        <button 
+          type="submit" 
+          class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-3 rounded-lg hover:opacity-90 transition-all"
+        >
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+  
+  <div class="settings-panel" id="settings-panel">
+    <h2 class="text-xl font-bold mb-4 text-white">Settings</h2>
+    
+    <div class="mb-6">
+      <h3 class="text-lg font-medium mb-2 text-white">AI Model</h3>
+      <div id="model-options" class="space-y-2">
+        <!-- Model options will be loaded dynamically -->
+        <div class="animate-pulse bg-gray-700 h-10 rounded-md"></div>
+        <div class="animate-pulse bg-gray-700 h-10 rounded-md"></div>
+      </div>
+    </div>
+    
+    <div class="mb-6">
+      <h3 class="text-lg font-medium mb-2 text-white">Temperature</h3>
+      <input type="range" min="0" max="100" value="70" class="w-full" id="temperature-slider">
+      <div class="flex justify-between text-sm text-gray-400">
+        <span>Precise</span>
+        <span id="temperature-value">0.7</span>
+        <span>Creative</span>
+      </div>
+    </div>
+    
+    <div class="mb-6">
+      <h3 class="text-lg font-medium mb-2 text-white">UI Theme</h3>
+      <div class="flex gap-2">
+        <button class="px-4 py-2 bg-white text-gray-900 rounded-md" id="light-theme">Light</button>
+        <button class="px-4 py-2 bg-gray-800 text-white rounded-md" id="dark-theme">Dark</button>
+      </div>
+    </div>
+    
+    <div class="mt-8">
+      <button class="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" id="clear-chat">
+        Clear Chat History
+      </button>
+    </div>
+    
+    <div class="mt-4">
+      <h3 class="text-lg font-medium mb-2 text-white">Server Status</h3>
+      <div id="server-status" class="p-2 bg-gray-700 rounded-md text-sm">
+        Checking connection...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Variables
+      const chatContainer = document.getElementById('chat-container');
+      const chatForm = document.getElementById('chat-form');
+      const userInput = document.getElementById('user-input');
+      const settingsToggle = document.getElementById('settings-toggle');
+      const settingsPanel = document.getElementById('settings-panel');
+      const overlay = document.getElementById('overlay');
+      const themeToggle = document.getElementById('theme-toggle');
+      const lightThemeBtn = document.getElementById('light-theme');
+      const darkThemeBtn = document.getElementById('dark-theme');
+      const temperatureSlider = document.getElementById('temperature-slider');
+      const temperatureValue = document.getElementById('temperature-value');
+      const clearChatBtn = document.getElementById('clear-chat');
+      const modelOptions = document.getElementById('model-options');
+      const serverStatus = document.getElementById('server-status');
+      const statusMessage = document.getElementById('status-message');
+      
+      let chatHistory = [];
+      let currentModel = 'deepseek-chat';
+      let temperature = 0.7;
+      
+      // Dynamically determine the API base URL
+      let apiBaseUrl = '';
+      // First try to use the current origin (when served by the Express server)
+      if (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
+        apiBaseUrl = window.location.origin;
+      } else {
+        // Fallback to a default, can be customized as needed
+        apiBaseUrl = 'http://localhost:5500';
+      }
+      
+      console.log('Using API base URL:', apiBaseUrl);
+
+      // Test server connection
+      async function testServerConnection() {
+        statusMessage.style.display = 'block';
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/test`);
+          const data = await response.json();
+          
+          if (data.success) {
+            serverStatus.textContent = 'Server connected ✅';
+            serverStatus.style.backgroundColor = '#059669';
+            statusMessage.style.display = 'none';
+            
+            // If server is connected, load the models
+            fetchModels();
+          } else {
+            serverStatus.textContent = 'Server error ❌';
+            serverStatus.style.backgroundColor = '#dc2626';
+            statusMessage.textContent = 'Error connecting to the server. Please check your server is running.';
+            statusMessage.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Server connection error:', error);
+          serverStatus.textContent = 'Server unreachable ❌';
+          serverStatus.style.backgroundColor = '#dc2626';
+          statusMessage.textContent = `Cannot connect to server at ${apiBaseUrl}. Make sure your server is running and accessible.`;
+          statusMessage.style.backgroundColor = '#fee2e2';
+          statusMessage.style.color = '#b91c1c';
+          statusMessage.style.display = 'block';
+        }
+      }
+      
+      // Initialize
+      testServerConnection();
+      
+      // Event Listeners
+      chatForm.addEventListener('submit', handleSubmit);
+      settingsToggle.addEventListener('click', toggleSettings);
+      overlay.addEventListener('click', toggleSettings);
+      themeToggle.addEventListener('click', toggleTheme);
+      lightThemeBtn.addEventListener('click', () => setTheme('light'));
+      darkThemeBtn.addEventListener('click', () => setTheme('dark'));
+      temperatureSlider.addEventListener('input', updateTemperature);
+      clearChatBtn.addEventListener('click', clearChat);
+      
+      // Functions
+      async function fetchModels() {
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/models`);
+          const data = await response.json();
+          
+          if (data.success) {
+            modelOptions.innerHTML = '';
+            data.models.forEach(model => {
+              const modelEl = document.createElement('div');
+              modelEl.className = `model-option text-white ${model.id === currentModel ? 'selected' : ''}`;
+              modelEl.dataset.modelId = model.id;
+              modelEl.textContent = model.name;
+              modelEl.addEventListener('click', () => selectModel(model.id));
+              modelOptions.appendChild(modelEl);
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching models:', error);
+          modelOptions.innerHTML = '<div class="error-message">Failed to load models. Server might be down.</div>';
+        }
+      }
+      
+      function selectModel(modelId) {
+        currentModel = modelId;
+        document.querySelectorAll('.model-option').forEach(el => {
+          el.classList.toggle('selected', el.dataset.modelId === modelId);
+        });
+      }
+      
+      function updateTemperature() {
+        temperature = temperatureSlider.value / 100;
+        temperatureValue.textContent = temperature.toFixed(1);
+      }
+      
+      async function handleSubmit(e) {
+        e.preventDefault();
+        const message = userInput.value.trim();
+        if (!message) return;
+        
+        // Clear any error messages
+        const errorMessages = document.querySelectorAll('.error-message');
+        errorMessages.forEach(msg => msg.remove());
+        
+        // Add user message to chat
+        addMessage(message, 'user');
+        userInput.value = '';
+        
+        // Show typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'typing-indicator bot-message message';
+        typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+        chatContainer.appendChild(typingIndicator);
+        scrollToBottom();
+        
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message,
+              model: currentModel,
+              history: chatHistory,
+              temperature
+            })
+          });
+          
+          const data = await response.json();
+          
+          // Remove typing indicator
+          chatContainer.removeChild(typingIndicator);
+          
+          if (data.success) {
+            addMessage(data.reply, 'bot');
+          } else {
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'error-message bot-message message';
+            errorMessage.innerHTML = `<p>Error: ${data.error || 'Something went wrong'}</p>`;
+            chatContainer.appendChild(errorMessage);
+            scrollToBottom();
+          }
+        } catch (error) {
+          // Remove typing indicator
+          if (chatContainer.contains(typingIndicator)) {
+            chatContainer.removeChild(typingIndicator);
+          }
+          
+          const errorMessage = document.createElement('div');
+          errorMessage.className = 'error-message bot-message message';
+          errorMessage.innerHTML = `
+            <p><strong>Network Error:</strong> Cannot connect to the server.</p>
+            <p>Please check that:</p>
+            <ol class="list-decimal ml-5 mt-2">
+              <li>Your server is running</li>
+              <li>You're using the correct port (currently trying ${apiBaseUrl})</li>
+              <li>Your DeepSeek API key is valid</li>
+            </ol>
+          `;
+          chatContainer.appendChild(errorMessage);
+          scrollToBottom();
+          
+          console.error('Error:', error);
+        }
+      }
+      
+      function addMessage(content, role) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `${role}-message message`;
+        
+        // Process markdown-like formatting
+        content = content
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\n/g, '<br>');
+        
+        messageDiv.innerHTML = `<p>${content}</p>`;
+        chatContainer.appendChild(messageDiv);
+        
+        // Update chat history
+        chatHistory.push({ role, content });
+        
+        scrollToBottom();
+      }
+      
+      function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+      
+      function toggleSettings() {
+        settingsPanel.classList.toggle('open');
+        overlay.classList.toggle('active');
+      }
+      
+      function toggleTheme() {
+        const isDark = document.body.classList.contains('theme-dark');
+        setTheme(isDark ? 'light' : 'dark');
+      }
+      
+      function setTheme(theme) {
+        document.body.className = `theme-${theme}`;
+        themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+      }
+      
+      function clearChat() {
+        chatContainer.innerHTML = '<div class="bot-message message"><p>Chat history cleared. How can I help you today?</p></div>';
+        chatHistory = [];
+      }
+    });
+  </script>
+</body>
+</html>
